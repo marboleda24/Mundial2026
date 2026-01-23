@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card fade-in">
+    <h2 class="section-title" style="margin-top: 0; text-align: center;"><i class="fas fa-crown"></i> Ranking de Puntos
+    </h2>
+
+    <table class="ranking-table">
+        <thead>
+            <tr>
+                <th style="width: 10%;">#</th>
+                <th>Usuario</th>
+                <th style="text-align: right;">Puntos</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td class="
+                    {% if loop.index == 1 %}rank-1
+                    {% elif loop.index == 2 %}rank-2
+                    {% elif loop.index == 3 %}rank-3
+                    {% endif %}
+                ">
+                    {% if loop.index == 1 %}<i class="fas fa-trophy"></i>
+                    {% elif loop.index == 2 %}<i class="fas fa-medal"></i>
+                    {% elif loop.index == 3 %}<i class="fas fa-medal"></i>
+                    {% else %}{{ loop.index }}
+                    {% endif %}
+                </td>
+                <td style="font-weight: 500;">{{ u.username }}</td>
+                <td style="text-align: right; font-weight: bold;">{{ u.puntos }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

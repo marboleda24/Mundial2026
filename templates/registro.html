@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="max-width: 420px; margin: 4rem auto;">
+    <div class="card fade-in" style="border-top: 4px solid var(--primary-color); text-align: center;">
+
+        <div style="margin-bottom: 2rem;">
+            <i class="fas fa-user-plus" style="font-size: 3rem; color: var(--secondary-color);"></i>
+        </div>
+
+        <h2 style="margin-bottom: 0.5rem; color: white;">Únete a la Polla</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Compite con tus amigos en el Mundial 2026.</p>
+
+        <form action="{{ url_for('registro') }}" method="POST" style="text-align: left;">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user" style="width: 20px;"></i> Usuario</label>
+                <input type="text" name="username" class="form-control" placeholder="Elige tu nombre de crack" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock" style="width: 20px;"></i> Contraseña</label>
+                <input type="password" name="password" class="form-control" placeholder="Una segura" required>
+            </div>
+
+            <button type="submit" class="btn btn-block"
+                style="margin-top: 1rem; background: var(--secondary-color); color: #000;"
+                onclick="this.innerHTML='Creando usuario...'; this.style.opacity='0.5';">
+                Crear Cuenta <i class="fas fa-check"></i>
+            </button>
+        </form>
+
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+            <p style="font-size: 0.9rem; color: var(--text-muted);">¿Ya estás registrado?</p>
+            <a href="{{ url_for('login') }}"
+                style="color: var(--primary-color); font-weight: 600; text-decoration: underline;">
+                Inicia sesión aquí
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

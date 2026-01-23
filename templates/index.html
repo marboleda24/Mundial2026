@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<div class="hero fade-in">
+    <h1><i class="fas fa-globe-americas"></i> Mundial 2026</h1>
+    <p>La emoción del fútbol en tus manos. Predice y gana.</p>
+</div>
+
+{% if current_user.is_authenticated %}
+
+<!-- Seccion Predicción del Torneo -->
+<div class="card fade-in" style="border-top: 4px solid var(--secondary-color);">
+    <h2 class="section-title" style="margin-top:0;"><i class="fas fa-trophy"></i> Predicción del Podio</h2>
+
+    {% if prediccion_torneo %}
+    <!-- Vista de solo lectura si ya predijo -->
+    <div class="podium-grid">
+        <div class="podium-place">
+            <i class="fas fa-trophy podium-icon" style="color: #FFD700;"></i>
+            <h3>Campeón</h3>
+            <p style="font-size: 1.2rem; font-weight: bold;">{{ prediccion_torneo.campeon }}</p>
+        </div>
+        <div class="podium-place">
+            <i class="fas fa-medal podium-icon" style="color: #C0C0C0;"></i>
+            <h3>Subcampeón</h3>
+            <p style="font-size: 1.2rem; font-weight: bold;">{{ prediccion_torneo.subcampeon }}</p>
+        </div>
+        <div class="podium-place">
+            <i class="fas fa-medal podium-icon" style="color: #CD7F32;"></i>
+            <h3>Tercer Puesto</h3>
+            <p style="font-size: 1.2rem; font-weight: bold;">{{ prediccion_torneo.tercer_puesto }}</p>
+        </div>
+    </div>
+    <div style="text-align: center; margin-top: 1rem;">
+        <small class="text-muted">Ya has registrado tu predicción del torneo.</small>
+    </div>
+    {% else %}
+    <!-- Formulario de predicción -->
+    <form action="{{ url_for('prediccion_torneo') }}" method="POST">
+        <div class="podium-grid">
+            <div class="podium-place">
+                <i class="fas fa-trophy podium-icon" style="color: #FFD700;"></i>
+                <h3 style="margin-bottom: 0.5rem;">Campeón</h3>
+                <select name="campeon" class="form-control" required>
+                    <option value="" disabled selected>Selecciona equipo</option>
+                    {% for team in equipos %}
+                    <option value="{{ team }}">{{ team }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="podium-place">
+                <i class="fas fa-medal podium-icon" style="color: #C0C0C0;"></i>
+                <h3 style="margin-bottom: 0.5rem;">Subcampeón</h3>
+                <select name="subcampeon" class="form-control" required>
+                    <option value="" disabled selected>Selecciona equipo</option>
+                    {% for team in equipos %}
+                    <option value="{{ team }}">{{ team }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="podium-place">
+                <i class="fas fa-medal podium-icon" style="color: #CD7F32;"></i>
+                <h3 style="margin-bottom: 0.5rem;">Tercer Puesto</h3>
+                <select name="tercero" class="form-control" required>
+                    <option value="" disabled selected>Selecciona equipo</option>
+                    {% for team in equipos %}
+                    <option value="{{ team }}">{{ team }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 2rem;">
+            <button type="submit" class="btn">Guardar Podio <i class="fas fa-save"></i></button>
+            <p style="margin-top:0.5rem; font-size: 0.8rem; color: var(--danger);">* Solo puedes elegir una vez.</p>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<!-- Partidos -->
+{% for jornada, partidos in agrupados.items() %}
+<div class="fade-in" style="margin-bottom: 3rem;">
+    <h2 class="section-title"><i class="far fa-calendar-alt"></i> {{ jornada }}</h2>
+
+    <div class="match-grid">
+        {% for p in partidos %}
+        <!-- Compact Row Card -->
+        <form action="{{ url_for('pronosticar') }}" method="POST" class="match-card">
+            <input type="hidden" name="partido_id" value="{{ p.id }}">
+
+            <!-- Info (Fecha/Estado) -->
+            <div class="match-info">
+                <span class="match-date">{{ p.fecha }}</span>
+                <span
+                    style="font-size: 0.8rem; font-weight: bold; color: {{ 'var(--primary-color)' if p.estado == 'FT' else 'var(--secondary-color)' }}">
+                    {% if p.estado == 'NS' %}Por Jugar
+                    {% elif p.estado == 'FT' %}Finalizado
+                    {% elif p.estado == 'LIVE' %}En Vivo
+                    {% elif p.estado == 'TBD' %}Por Definir
+                    {% else %}{{ p.estado }}{% endif %}
+                </span>
+            </div>
+
+            <!-- Equipos y Marcador -->
+            <div class="match-teams-row">
+                <!-- Local -->
+                <div class="team-compact team-left">
+                    <span>{{ p.local_nombre }}</span>
+                    {% if p.local_flag %}
+                    <img src="{{ p.local_flag }}" alt="{{ p.local_nombre }}">
+                    {% else %}
+                    <i class="fas fa-shield-alt"></i>
+                    {% endif %}
+                </div>
+
+                <!-- Inputs -->
+                {% set pred = predicciones.get(p.id) %}
+                <div class="prediction-inputs-compact">
+                    <input type="number" name="goles_local" class="score-input-compact" min="0"
+                        value="{{ pred.goles_local if pred else '' }}" required placeholder="-">
+                    <span style="font-weight:bold; color:var(--text-muted)">:</span>
+                    <input type="number" name="goles_visitante" class="score-input-compact" min="0"
+                        value="{{ pred.goles_visitante if pred else '' }}" required placeholder="-">
+                </div>
+
+                <!-- Visitante -->
+                <div class="team-compact team-right">
+                    {% if p.visitante_flag %}
+                    <img src="{{ p.visitante_flag }}" alt="{{ p.visitante_nombre }}">
+                    {% else %}
+                    <i class="fas fa-shield-alt"></i>
+                    {% endif %}
+                    <span>{{ p.visitante_nombre }}</span>
+                </div>
+            </div>
+
+            <!-- Botón Guardar -->
+            <button type="submit" class="btn-update" title="Guardar Pronóstico">
+                <i class="fas fa-check"></i>
+            </button>
+        </form>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+
+{% else %}
+<!-- Vista para no logueados -->
+<div class="card fade-in" style="text-align: center;">
+    <h2>¡Únete a la Polla Mundial!</h2>
+    <p style="margin: 1rem 0 2rem;">Regístrate para hacer tus pronósticos, competir con amigos y demostrar quién sabe
+        más de fútbol.</p>
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        <a href="{{ url_for('registro') }}" class="btn">Comenzar Ahora</a>
+        <a href="{{ url_for('login') }}" class="btn"
+            style="background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color);">Ingresar</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
