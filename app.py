@@ -67,6 +67,11 @@ class Partido(db.Model):
     # Optional: Add jornada if needed, or parse from date
     # jornada = db.Column(db.String(50)) 
 
+# --- INITIALIZATION ---
+# Create tables if they don't exist (Critical for first run on Gunicorn/Render/Railway)
+with app.app_context():
+    db.create_all()
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
