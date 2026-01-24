@@ -7,10 +7,11 @@ SEASON_ID = 26618
 FECHA_INICIO = "2026-06-11"
 FECHA_FIN = "2026-07-19"
 
-def sync_matches():
+def sync_matches(use_existing_context=False):
     """Sincroniza los partidos desde la API hacia la base de datos configurada en app.py."""
     
-    with app.app_context():
+    # helper interno
+    def _run_logic():
         # Crear tablas si no existen (incluyendo tabla partidos ahora que es Modelo)
         db.create_all()
         
@@ -25,7 +26,7 @@ def sync_matches():
             params = {
                 'api_token': API_TOKEN,
                 'filters': f'seasonIds:{SEASON_ID}',
-                'include': 'participants;state',
+                'include': 'participants;state;round', # Agregamos round para obtener la jornada
                 'page': pagina 
             }
             
@@ -41,6 +42,13 @@ def sync_matches():
                         local = next((p for p in participants if p.get('meta', {}).get('location') == 'home'), {})
                         visitante = next((p for p in participants if p.get('meta', {}).get('location') == 'away'), {})
                         estado_nombre = f.get('state', {}).get('short_name', 'NS')
+                        
+                        # Extraer Jornada
+                        round_info = f.get('round', {})
+                        nombre_jornada = round_info.get('name') # Ej: "Group Stage - Matchday 1"
+                        # Simplificar nombre si es posible (opcional)
+                        if not nombre_jornada:
+                            nombre_jornada = "Fase de Grupos"
                         
                         partido_id = f['id']
                         
@@ -58,6 +66,7 @@ def sync_matches():
                         partido.visitante_nombre = visitante.get('name', 'Por definir')
                         partido.visitante_flag = visitante.get('image_path', '')
                         partido.estado = estado_nombre
+                        partido.jornada = nombre_jornada
                         
                         # Solo actualizamos goles si la API los trae (esto depende de la estructura exacta de scores)
                         # Por ahora asumimos que solo queremos la info base.
@@ -81,6 +90,12 @@ def sync_matches():
         
         print("-" * 50)
         print(f"¡FINALIZADO! Se han sincronizado {total_importados} partidos.")
+
+    if use_existing_context:
+        _run_logic()
+    else:
+        with app.app_context():
+            _run_logic()
 
 if __name__ == "__main__":
     sync_matches()

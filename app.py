@@ -64,13 +64,33 @@ class Partido(db.Model):
     goles_local_real = db.Column(db.Integer, nullable=True)
     goles_visitante_real = db.Column(db.Integer, nullable=True)
     estado = db.Column(db.String(20)) # NS, FT, LIVE
-    # Optional: Add jornada if needed, or parse from date
-    # jornada = db.Column(db.String(50)) 
+    jornada = db.Column(db.String(50)) # Added Jornada 
 
 # --- INITIALIZATION ---
+# Remove explicit inline initialization here to avoid double execution or scope issues.
+# Initialization is handled in the __main__ block or by the custom initialize_data function below.
+
+@login_manager.user_loader
+def load_user(user_id):
+# --- INITIALIZATION ---
+def initialize_data():
+    """Confirma que existan partidos; si no, intenta descargarlos."""
+    # Verificar si la tabla Partido está vacía
+    if Partido.query.first() is None:
+        print(">>> Base de datos de partidos vacía. Iniciando descarga automática...")
+        try:
+            # Importación tardía para evitar dependencia circular
+            from sync_matches import sync_matches
+            # sync_matches maneja su propio commit, pero aquí ya estamos en contexto
+            sync_matches(use_existing_context=True)
+            print(">>> Descarga automática completada exitosamente.")
+        except Exception as e:
+            print(f">>> Error en la descarga automática de partidos: {e}")
+
 # Create tables if they don't exist (Critical for first run on Gunicorn/Render/Railway)
 with app.app_context():
     db.create_all()
+    initialize_data()
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -79,18 +99,21 @@ def load_user(user_id):
 # --- RUTAS ---
 
 @app.route('/')
-@login_required
 def index():
-    # Traemos los partidos ordenados por fecha
+    # Usando SQLAlchemy compatible con Postgres y SQLite
     partidos_raw = Partido.query.order_by(Partido.fecha.asc()).all()
     
-    # AGRUPAR POR JORNADA (Usando fecha como aproximación)
+    # AGRUPAR POR JORNADA
     agrupados = {}
     for p in partidos_raw:
-        # Usar la fecha (primeros 10 caracteres: YYYY-MM-DD) como nombre de grupo
-        nombre_grupo = p.fecha[:10] 
-        
-        # Opcional: Podrías mapear fechas a "Jornada 1", "Octavos", etc. si tuvieras esa lógica
+        # Prioridad: Jornada de la BD > Fecha
+        if p.jornada:
+            nombre_grupo = p.jornada
+        elif p.fecha:
+             # Fallback: YYYY-MM-DD
+            nombre_grupo = p.fecha[:10]
+        else:
+            nombre_grupo = "Partidos por definir"
             
         if nombre_grupo not in agrupados:
             agrupados[nombre_grupo] = []
@@ -105,21 +128,17 @@ def index():
         mis_predicciones = {p.partido_id: p for p in preds}
         prediccion_torneo = PrediccionTorneo.query.filter_by(user_id=current_user.id).first()
     
-    # Obtener lista de equipos únicos para el dropdown
+    # Obtener lista de equipos únicos para el dropdown (Podio)
     equipos = set()
     keywords_exclude = ['Group', 'Winner', 'Runner', 'Por definir', 'To Be Defined', '1st', '2nd']
     
     for p in partidos_raw:
-        # Check Local
         if p.local_nombre and not any(k in p.local_nombre for k in keywords_exclude):
             equipos.add(p.local_nombre)
-        # Check Visitante
         if p.visitante_nombre and not any(k in p.visitante_nombre for k in keywords_exclude):
             equipos.add(p.visitante_nombre)
             
     lista_equipos = sorted(list(equipos))
-    
-    # Si no hay equipos (ej. inicio de temporada o error de sync), usar fallback
     if not lista_equipos:
         lista_equipos = sorted(TEAMS_FALLBACK)
 
