@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-edit"></i> Pronósticos para: {{ polla.nombre }}</h4>
+        <a href="{{ url_for('pollas.detalle', id=polla.id) }}" class="btn btn-sm btn-dark">Volver a la Polla</a>
+    </div>
+    <div class="card-body">
+        
+        <div class="alert alert-info small">
+            <i class="fas fa-info-circle"></i> Solo puedes ingresar o modificar marcadores de partidos que aún no hayan comenzado (Estado Abierto).
+        </div>
+
+        <form action="{{ url_for('predicciones.ingresar', polla_id=polla.id) }}" method="POST">
+            <div class="table-responsive">
+                <table class="table align-middle text-center table-hover border-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha / Info</th>
+                            <th class="text-right">Local</th>
+                            <th>Marcador</th>
+                            <th class="text-left">Visitante</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for partido in partidos %}
+                        {% set pred = pred_dict.get(partido.id) %}
+                        {% set eq_local = equipos_dict.get(partido.equipo_local_id) %}
+                        {% set eq_visitante = equipos_dict.get(partido.equipo_visitante_id) %}
+                        {% set bloqueado = partido.estado not in ['NS', 'No Iniciado'] or partido.fecha_hora < ahora %}
+                        
+                        <tr style="{{ 'opacity: 0.5; filter: grayscale(50%);' if bloqueado else '' }}">
+                            <td>
+                                <small class="text-muted d-block">{{ partido.jornada }}</small>
+                                <strong class="fecha-local text-warning" data-utc="{{ partido.fecha_hora.isoformat() }}Z">
+                                    <i class="fas fa-clock"></i> {{ partido.fecha_hora.strftime('%d/%m/%y %H:%M') }} UTC
+                                </strong>
+                            </td>
+                            <td class="text-right align-middle">
+                                {{ eq_local.nombre if eq_local else 'TBD' }}
+                                {% if eq_local and eq_local.bandera_url %}
+                                <img src="{{ eq_local.bandera_url }}" width="25" class="ml-2 border rounded">
+                                {% endif %}
+                            </td>
+                            <td class="align-middle">
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <input type="number" name="pred_local_{{ partido.id }}" class="form-control form-control-sm text-center font-weight-bold" style="width: 55px;" min="0" value="{{ pred.goles_local_pred if pred else '' }}" {{ 'disabled' if bloqueado else '' }}>
+                                    <span class="mx-2">-</span>
+                                    <input type="number" name="pred_visitante_{{ partido.id }}" class="form-control form-control-sm text-center font-weight-bold" style="width: 55px;" min="0" value="{{ pred.goles_visitante_pred if pred else '' }}" {{ 'disabled' if bloqueado else '' }}>
+                                </div>
+                            </td>
+                            <td class="text-left align-middle">
+                                {% if eq_visitante and eq_visitante.bandera_url %}
+                                <img src="{{ eq_visitante.bandera_url }}" width="25" class="mr-2 border rounded">
+                                {% endif %}
+                                {{ eq_visitante.nombre if eq_visitante else 'TBD' }}
+                            </td>
+                            <td class="align-middle">
+                                {% if bloqueado %}
+                                    <span class="badge badge-danger"><i class="fas fa-lock"></i> Cerrado</span><br>
+                                    <small {% if partido.estado in ['FT', 'Finalizado'] %}class="font-weight-bold text-dark"{% endif %}>
+                                        Real: {{ partido.goles_local_real if partido.goles_local_real is not none else '?' }} - {{ partido.goles_visitante_real if partido.goles_visitante_real is not none else '?' }}
+                                    </small>
+                                {% else %}
+                                    <span class="badge badge-success"><i class="fas fa-unlock"></i> Abierto</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-muted">Aún no hay partidos sincronizados para este torneo.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if partidos %}
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success btn-lg px-5 shadow"><i class="fas fa-save"></i> Guardar Pronósticos</button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

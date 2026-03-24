@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4 shadow-lg border-0">
+            <div class="card-body p-4">
+                <h2 class="card-title text-warning font-weight-bold"><i class="fas fa-trophy mr-2"></i> {{ polla.nombre }}</h2>
+                <h6 class="card-subtitle mb-2 text-muted">Torneo ID: {{ polla.torneo_id }} | Estado: {{ "Pública" if polla.es_publica else "Privada" }}</h6>
+                <p class="card-text mt-3">{{ polla.descripcion }}</p>
+                
+                {% if not es_miembro %}
+                    {% if polla.es_publica %}
+                    <form action="{{ url_for('pollas.unirse', id=polla.id) }}" method="POST">
+                        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-handshake"></i> Unirse a esta Polla</button>
+                    </form>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-success">Eres miembro activo de este universo futbolero.</div>
+                    <a href="{{ url_for('predicciones.ingresar', polla_id=polla.id) }}" class="btn btn-warning"><i class="fas fa-pen"></i> Ingresar Mis Pronósticos</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if es_miembro %}
+        <div class="card shadow border-0">
+            <div class="card-header border-0 d-flex justify-content-between align-items-center" style="background: rgba(46, 204, 113, 0.2);">
+                <h4 class="mb-0 text-success"><i class="fas fa-balance-scale"></i> Reglas de Puntuación (Consenso)</h4>
+                {% if es_admin %}<span class="badge badge-warning text-dark"><i class="fas fa-crown"></i> Admin</span>{% endif %}
+            </div>
+            <div class="card-body">
+                <!-- Se podría someter a votación las reglas, por ahora el admin impone -->
+                {% if es_admin %}
+                    <p class="text-info small"><i class="fas fa-info-circle"></i> Como administrador puedes alterar directamente el peso en puntos de cada regla.</p>
+                {% else %}
+                    <p class="text-muted small">Estas son las reglas impuestas con las que se calcularán tus pronósticos.</p>
+                {% endif %}
+                
+                <form action="{{ url_for('pollas.actualizar_reglas', id=polla.id) }}" method="POST">
+                    <table class="table table-hover table-sm text-white mt-3 border-0">
+                        <thead class="border-0">
+                            <tr>
+                                <th>Condición de Juego</th>
+                                <th>Puntos a otorgar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for regla in reglas %}
+                            <tr>
+                                <td>
+                                    <strong>{{ regla.tipo_regla }}</strong><br>
+                                    <small class="text-muted">{{ regla.comentarios }}</small>
+                                </td>
+                                <td>
+                                    {% if es_admin %}
+                                        <input type="number" class="form-control form-control-sm w-50" name="regla_{{ regla.id }}" value="{{ regla.puntos_asignados }}" min="0" required>
+                                    {% else %}
+                                        <h5><span class="badge badge-primary">{{ regla.puntos_asignados }} puntos</span></h5>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if es_admin %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Guardar Cambios de Reglas</button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        
+        <!-- Módulo de Invitaciones Sociales -->
+        <div class="card shadow-lg border-0 mt-4">
+            <div class="card-header border-0 text-white" style="background: rgba(155, 89, 182, 0.4);">
+                <h4 class="mb-0 text-info"><i class="fas fa-bullhorn text-warning"></i> Invitar Amig@s</h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-muted mb-3">La copa no se juega sola. Comparte este enlace exclusivo para que más expertos se unan a tu comunidad:</p>
+                
+                <div class="input-group mb-4">
+                    <input type="text" class="form-control text-warning font-weight-bold" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);" id="link-invitacion" value="{{ url_for('pollas.invitacion', id=polla.id, token=generar_token_polla(polla.id), _external=True) }}" readonly>
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-warning shadow-sm" type="button" onclick="copiarEnlace()"><i class="fas fa-copy"></i> Copiar</button>
+                    </div>
+                </div>
+                
+                <div class="d-flex flex-wrap" style="gap: 10px;">
+                    <a href="https://api.whatsapp.com/send?text=¡Únete a mi Polla del Mundial 2026! Arma tus pronósticos y compite conmigo. Haz clic aquí para entrar: {{ url_for('pollas.invitacion', id=polla.id, token=generar_token_polla(polla.id), _external=True) }}" target="_blank" class="btn btn-success shadow-none"><i class="fab fa-whatsapp mr-2"></i> WhatsApp</a>
+                    <a href="mailto:?subject=Invitación a Polla Mundial 2026&body=Hola, te invito a unirte a mi Polla del Mundial. Arma tus pronósticos y compitamos por la corona. Entra aquí: {{ url_for('pollas.invitacion', id=polla.id, token=generar_token_polla(polla.id), _external=True) }}" class="btn btn-secondary shadow-none"><i class="fas fa-envelope mr-2"></i> Correo</a>
+                    <button class="btn btn-primary shadow-none" onclick="compartirNativo()"><i class="fas fa-share-nodes mr-2"></i> Otras App</button>
+                </div>
+            </div>
+        </div>
+        <!-- Script de JS para herramientas nativas -->
+        <script>
+            function copiarEnlace() {
+                var copyText = document.getElementById("link-invitacion");
+                copyText.select();
+                copyText.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(copyText.value)
+                  .then(() => alert("✅ Enlace copiado al portapapeles correctamente."))
+                  .catch(() => alert("❌ Hubo un error copiando el enlace."));
+            }
+            
+            function compartirNativo() {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Torneo Polla Mundial 2026',
+                        text: '¡Entra al estadio! Únete a la Polla y demuestra tus dotes como técnico.',
+                        url: document.getElementById("link-invitacion").value,
+                    })
+                    .catch((error) => console.log('Error abriendo ventana nativa', error));
+                } else {
+                    alert('⚠️ Tu navegador no soporta ventanas de compartición nativas o te encuentras en un ambiente HTTP inseguro. Por favor utiliza el botón de "Copiar" o envíalo directo por WhatsApp.');
+                }
+            }
+        </script>
+        {% endif %}
+
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow border-0">
+            <div class="card-header border-0 text-white" style="background: rgba(52, 152, 219, 0.4);">
+                <h5 class="mb-0 text-info"><i class="fas fa-users"></i> Prestigio Local</h5>
+            </div>
+            <ul class="list-group list-group-flush bg-transparent">
+                {% for p in participantes %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ usuarios_dict.get(p.usuario_id, 'Usuario Desconocido') }}
+                    {% if p.es_administrador_polla %}
+                        <span class="badge badge-danger badge-pill" title="Admin"><i class="fas fa-crown"></i></span>
+                    {% endif %}
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted">Aún no hay participantes</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

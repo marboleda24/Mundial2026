@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="fas fa-trophy"></i> Gestión de Pollas</h2>
+    </div>
+    <div class="col-md-4 text-right">
+        <a href="{{ url_for('pollas.crear') }}" class="btn btn-success"><i class="fas fa-plus"></i> Crear Nueva Polla</a>
+    </div>
+</div>
+
+<div class="card mb-4 shadow border-0">
+    <div class="card-header border-0" style="background: rgba(41, 128, 185, 0.4);">
+        <h4 class="mb-0 text-info"><i class="fas fa-star"></i> Mis Pollas Oficiales</h4>
+    </div>
+    <div class="card-body">
+        {% if mis_pollas %}
+            <div class="list-group">
+            {% for polla in mis_pollas %}
+                <a href="{{ url_for('pollas.detalle', id=polla.id) }}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ polla.nombre }}</h5>
+                        <small>Torneo: {{ polla.torneo_id }}</small>
+                    </div>
+                    <p class="mb-1">{{ polla.descripcion[:100] }}...</p>
+                    <small class="text-muted"><i class="fas fa-users"></i> {{ "Pública" if polla.es_publica else "Privada" }}</small>
+                </a>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">Aún no participas en ninguna polla. ¡Únete a una o crea la tuya!</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow border-0 mt-5">
+    <div class="card-header border-0" style="background: rgba(241, 196, 15, 0.2);">
+        <h4 class="mb-0 text-warning"><i class="fas fa-search"></i> Comunidades Públicas Disponibles</h4>
+    </div>
+    <div class="card-body">
+        {% if pollas_publicas %}
+            <div class="row">
+            {% for polla in pollas_publicas %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ polla.nombre }}</h5>
+                            <p class="card-text">{{ polla.descripcion[:80] }}...</p>
+                            <form action="{{ url_for('pollas.unirse', id=polla.id) }}" method="POST">
+                                <button type="submit" class="btn btn-outline-primary btn-sm btn-block">Unirme Ahora</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">No hay pollas públicas buscando miembros en este momento.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

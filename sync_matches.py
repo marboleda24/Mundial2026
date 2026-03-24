@@ -1,101 +1,136 @@
-import requests
-from app import app, db, Partido
+import os
+from datetime import datetime, timezone
+from aplicacion import crear_aplicacion
+from aplicacion.extensiones import db
+from aplicacion.modelos import Partido, Equipo, Torneo
+from aplicacion.integraciones import obtener_adaptador
 
-# --- CONFIGURACIÓN ---
-API_TOKEN = "4iWfGL9c13i26q2GgELgpgFdUSiYILfF87V75JVSx1dXlAjeMYHNmOu5NLwz"
-SEASON_ID = 26618 
-FECHA_INICIO = "2026-06-11"
-FECHA_FIN = "2026-07-19"
+# --- CONFIGURACIÓN DE PROVEEDORES (MULTI-API) ---
+# Hemos cambiado a Football-Data.org (ID: "footballdata")
+PROVEEDOR_ACTIVO = "footballdata" 
+# Modifica esta cadena con tu token gratuito creado en football-data.org
+API_KEY = os.environ.get("FOOTBALL_API_KEY", "pega_aqui_tu_token_gratis_football_data")
 
-def sync_matches(use_existing_context=False):
-    """Sincroniza los partidos desde la API hacia la base de datos configurada en app.py."""
+# En football-data.org, la copa del mundo suele usar el código 'WC' o '2000'
+API_TORNEO_ID = "WC" 
+
+app = crear_aplicacion()
+
+def asegurar_torneo():
+    torneo = Torneo.query.filter_by(nombre="Mundial 2026").first()
+    if not torneo:
+        torneo = Torneo(
+            nombre="Mundial 2026", 
+            ano=2026, 
+            estado="Activo", 
+            proveedor_api=PROVEEDOR_ACTIVO,
+            api_torneo_id=API_TORNEO_ID,
+            comentarios="Generado para uso inteligente Multi-API"
+        )
+        db.session.add(torneo)
+        db.session.commit()
+    # Si la config de BD es distinta al script, actualizamos por consistencia
+    if torneo.proveedor_api != PROVEEDOR_ACTIVO or torneo.api_torneo_id != API_TORNEO_ID:
+        torneo.proveedor_api = PROVEEDOR_ACTIVO
+        torneo.api_torneo_id = API_TORNEO_ID
+        db.session.commit()
+        
+    return torneo
+
+def sync_matches():
+    """Sincroniza los partidos mediante el patrón Adapter garantizando independencia."""
     
-    # helper interno
-    def _run_logic():
-        # Crear tablas si no existen (incluyendo tabla partidos ahora que es Modelo)
+    with app.app_context():
+        # Precaución ante tablas no creadas
         db.create_all()
+        torneo = asegurar_torneo()
         
-        print(f"--- Iniciando Sincronización del Mundial 2026 (Season {SEASON_ID}) ---")
+        print("-" * 60)
+        print(f"💡 Iniciando Sincronización Inteligente Multi-API")
+        print(f"🏟  Torneo: {torneo.nombre} ({torneo.api_torneo_id})")
+        print(f"🔌 Proveedor Activo (DB): {torneo.proveedor_api.upper()}")
+        print("-" * 60)
         
-        pagina = 1
-        hay_mas_paginas = True
-        total_importados = 0
-        
-        while hay_mas_paginas:
-            url = f"https://api.sportmonks.com/v3/football/fixtures/between/{FECHA_INICIO}/{FECHA_FIN}"
-            params = {
-                'api_token': API_TOKEN,
-                'filters': f'seasonIds:{SEASON_ID}',
-                'include': 'participants;state;round', # Agregamos round para obtener la jornada
-                'page': pagina 
-            }
-            
-            try:
-                print(f"Consultando página {pagina}...")
-                response = requests.get(url, params=params)
-                data = response.json()
-                
-                if 'data' in data and len(data['data']) > 0:
-                    for f in data['data']:
-                        # Extraer datos
-                        participants = f.get('participants', [])
-                        local = next((p for p in participants if p.get('meta', {}).get('location') == 'home'), {})
-                        visitante = next((p for p in participants if p.get('meta', {}).get('location') == 'away'), {})
-                        estado_nombre = f.get('state', {}).get('short_name', 'NS')
-                        
-                        # Extraer Jornada
-                        round_info = f.get('round', {})
-                        nombre_jornada = round_info.get('name') # Ej: "Group Stage - Matchday 1"
-                        # Simplificar nombre si es posible (opcional)
-                        if not nombre_jornada:
-                            nombre_jornada = "Fase de Grupos"
-                        
-                        partido_id = f['id']
-                        
-                        # Buscar si existe
-                        partido = Partido.query.get(partido_id)
-                        if not partido:
-                            partido = Partido(id=partido_id)
-                            print(f"Nuevo partido: {partido_id}")
-                        
-                        # Actualizar campos
-                        partido.nombre = f.get('name', 'Partido TBD')
-                        partido.fecha = f['starting_at']
-                        partido.local_nombre = local.get('name', 'Por definir')
-                        partido.local_flag = local.get('image_path', '')
-                        partido.visitante_nombre = visitante.get('name', 'Por definir')
-                        partido.visitante_flag = visitante.get('image_path', '')
-                        partido.estado = estado_nombre
-                        partido.jornada = nombre_jornada
-                        
-                        # Solo actualizamos goles si la API los trae (esto depende de la estructura exacta de scores)
-                        # Por ahora asumimos que solo queremos la info base.
-                        
-                        db.session.add(partido)
-                        total_importados += 1
-                    
-                    db.session.commit()
-                    print(f"Página {pagina} procesada.")
-                    
-                    hay_mas_paginas = data.get('pagination', {}).get('has_more', False)
-                    if hay_mas_paginas:
-                        pagina += 1
-                else:
-                    print("No se encontraron datos.")
-                    hay_mas_paginas = False
-                    
-            except Exception as e:
-                print(f"Error: {e}")
-                break
-        
-        print("-" * 50)
-        print(f"¡FINALIZADO! Se han sincronizado {total_importados} partidos.")
+        if API_KEY == "pega_aqui_tu_token_gratis_football_data":
+            print("❌ ERROR GRAVE: Abre el archivo sync_matches.py y reemplaza `pega_aqui_tu_token_gratis_football_data` con tu Token.")
+            print("Para conseguir uno ve a: https://www.football-data.org/client/register")
+            return
 
-    if use_existing_context:
-        _run_logic()
-    else:
-        with app.app_context():
-            _run_logic()
+        # 1. Instanciar Adapter Dinámicamente según BD
+        try:
+            adapter = obtener_adaptador(torneo.proveedor_api, API_KEY)
+        except ValueError as e:
+            print(f"❌ Error fatal de sistema: {e}")
+            return
+            
+        # 2. Extracción de Equipos
+        print("📡 Conectando a la API para capturar Selecciones / Equipos...")
+        equipos_api = adapter.obtener_equipos(torneo.api_torneo_id)
+        
+        if not equipos_api:
+            print("⚠️ Advertencia: No se retornaron equipos. ¿Quizás el ID de Torneo (WC) no está disponible para tu plan?")
+            return
+            
+        equipos_insertados = 0
+        for eq_data in equipos_api:
+            try:
+                pid = int(eq_data['id_proveedor'])
+            except: 
+                continue # Saltar si el id_proveedor incluye strings raros en otras apis
+                
+            equipo = db.session.get(Equipo, pid)
+            if not equipo:
+                equipo = Equipo(
+                    id=pid,
+                    nombre=eq_data['nombre'],
+                    bandera_url=eq_data['bandera_url'],
+                    comentarios=f"Sincronizado vía {torneo.proveedor_api}"
+                )
+                db.session.add(equipo)
+                equipos_insertados += 1
+        db.session.commit()
+        print(f"✅ Se validaron {len(equipos_api)} selecciones terrestres. Fueron creadas {equipos_insertados} nuevas.")
+        
+        # 3. Extracción de Calendarios y Marcadores
+        print("\n📡 Conectando a la API para actualizar Partidos y Scores en vivo...")
+        partidos_api = adapter.obtener_partidos(torneo.api_torneo_id)
+        
+        partidos_insertados = 0
+        partidos_actualizados = 0
+        
+        for pa_data in partidos_api:
+            try:
+                p_id = int(pa_data['id_proveedor'])
+            except: 
+                continue
+                
+            partido = db.session.get(Partido, p_id)
+            es_nuevo = False
+            
+            if not partido:
+                partido = Partido(id=p_id)
+                es_nuevo = True
+                
+            partido.torneo_id = torneo.id
+            partido.equipo_local_id = int(pa_data['equipo_local_id'])
+            partido.equipo_visitante_id = int(pa_data['equipo_visitante_id'])
+            partido.fecha_hora = pa_data['fecha_hora']
+            partido.estado = pa_data['estado']
+            partido.goles_local_real = pa_data['goles_local_real']
+            partido.goles_visitante_real = pa_data['goles_visitante_real']
+            partido.jornada = pa_data['jornada']
+            partido.comentarios = f"Sincronizado multi-api UTC {datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y-%m-%d %H:%M')}"
+            
+            if es_nuevo:
+                db.session.add(partido)
+                partidos_insertados += 1
+            else:
+                partidos_actualizados += 1
+                
+        db.session.commit()
+        print(f"✅ Se sincronizó el calendario. {partidos_insertados} Registrados / {partidos_actualizados} Actualizados.")
+        print("-" * 60)
+        print("🏆 Arquitectura Multi-API corriendo a la perfección. Sincronización finalizada exitosamente.")
 
 if __name__ == "__main__":
     sync_matches()

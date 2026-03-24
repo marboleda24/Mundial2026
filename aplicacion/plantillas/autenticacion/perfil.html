@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5 mb-5">
+    <div class="col-md-6 col-lg-5">
+        <div class="card p-4 shadow-lg border-0">
+            <div class="text-center mb-4">
+                <div class="rounded-circle bg-dark d-inline-flex justify-content-center align-items-center mb-3" style="width: 100px; height: 100px; border: 3px solid var(--primary-color);">
+                    <i class="fas fa-user-astronaut fa-3x text-warning"></i>
+                </div>
+                <h3 class="font-weight-bold text-white">Mi Identidad</h3>
+                <p class="text-muted small">Actualiza tus datos de contacto y nombre de batalla.</p>
+            </div>
+            
+            <form action="{{ url_for('autenticacion.perfil') }}" method="POST">
+                <div class="form-group mb-4">
+                    <label for="correo" class="text-muted font-weight-bold"><i class="fas fa-envelope text-info mr-2"></i> Correo Electrónico</label>
+                    <input type="email" class="form-control form-control-lg" id="correo" name="correo" required value="{{ current_user.correo }}">
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label for="nombre_usuario" class="text-muted font-weight-bold"><i class="fas fa-user-tag text-info mr-2"></i> Nombre de Batalla</label>
+                    <input type="text" class="form-control form-control-lg" id="nombre_usuario" name="nombre_usuario" required minlength="3" maxlength="50" value="{{ current_user.nombre_usuario }}">
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label for="password" class="text-muted font-weight-bold"><i class="fas fa-lock text-info mr-2"></i> Cambiar Contraseña (Opcional)</label>
+                    <input type="password" class="form-control form-control-lg" id="password" name="password" minlength="8" placeholder="Déjalo en blanco para mantener la actual">
+                </div>
+                
+                <button type="submit" class="btn btn-warning btn-block btn-lg mt-4 shadow font-weight-bold text-dark">
+                    Guardar Cambios <i class="fas fa-save ml-2"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

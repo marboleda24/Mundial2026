@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 650px;">
+    <div class="text-center mb-4">
+        <i class="fas fa-trophy fa-4x text-warning mb-3"></i>
+        <h2 class="text-white font-weight-bold">Forja tu propio Torneo</h2>
+        <p class="text-muted">Crea una Polla, define las reglas e invita a los expertos.</p>
+    </div>
+    
+    <div class="card shadow-lg border-0 p-3">
+        <div class="card-body">
+            <form action="{{ url_for('pollas.crear') }}" method="POST">
+                
+                <div class="form-group">
+                    <label for="nombre">Nombre de la Polla</label>
+                    <input type="text" class="form-control" id="nombre" name="nombre" required placeholder="Ej. Los Amigos del GOL">
+                </div>
+                
+                <div class="form-group">
+                    <label for="descripcion">Descripción / Reglas de convivencia</label>
+                    <textarea class="form-control" id="descripcion" name="descripcion" rows="3" placeholder="Información general para los participantes..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="torneo_id">Torneo Asociado</label>
+                    <select class="form-control" id="torneo_id" name="torneo_id" required>
+                        {% for t in torneos %}
+                            <option value="{{ t.id }}">{{ t.nombre }} ({{ t.ano }})</option>
+                        {% else %}
+                            <option value="" disabled>No hay torneos creados</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group form-check mt-3 mb-4">
+                    <input type="checkbox" class="form-check-input" id="es_publica" name="es_publica">
+                    <label class="form-check-label" for="es_publica"><strong>Hacer Pública</strong> (Cualquiera en la plataforma podrá unirse a competir)</label>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-block btn-lg">Generar Universo de Polla</button>
+                <a href="{{ url_for('pollas.index') }}" class="btn btn-link btn-block text-muted">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

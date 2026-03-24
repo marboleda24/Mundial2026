@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏆 Polla Mundial 2026</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('principal.index') }}">
+                <i class="fas fa-globe-americas"></i> Polla Mundial 26
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item {{ 'active' if 'pollas' in request.endpoint else '' }}">
+                            <a class="nav-link" href="{{ url_for('pollas.index') }}"><i class="fas fa-handshake"></i> Comunidades</a>
+                        </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link text-white font-weight-bold" href="{{ url_for('autenticacion.perfil') }}"><i class="fas fa-user-circle text-warning"></i> {{ current_user.nombre_usuario }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{{ url_for('autenticacion.logout') }}"><i class="fas fa-sign-out-alt"></i> Salir</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('autenticacion.login') }}">Ingresar</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link btn btn-warning btn-sm text-dark font-weight-bold p-2 ml-2" href="{{ url_for('autenticacion.registro') }}">Regístrate</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Flash Messages Glassmorphism -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show card p-3 border-{{ category }}" role="alert" style="background: rgba(255,255,255,0.05); color: #fff;">
+                        <i class="fas fa-info-circle"></i> {{ message }}
+                        <button type="button" class="close text-white" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Espacio Principal -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Background Decoration Particles -->
+    <div style="position:fixed; top:50%; left:-10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(41,128,185,0.1) 0%, rgba(0,0,0,0) 70%); z-index: -1; border-radius: 50%;"></div>
+    <div style="position:fixed; bottom:-10%; right:-5%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(241,196,15,0.05) 0%, rgba(0,0,0,0) 70%); z-index: -1; border-radius: 50%;"></div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Motor Global de Husos Horarios -->
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const fechasLocales = document.querySelectorAll('.fecha-local');
+        fechasLocales.forEach(function(el) {
+            const utcString = el.getAttribute('data-utc');
+            if (utcString) {
+                // El navegador interpreta ISOString terminados en "Z" y los traduce a hora local
+                const fecha = new Date(utcString);
+                
+                // Formateo Premium - Nombre de día corto (Ej: vie.) + Fecha Numérica
+                const diaNombre = fecha.toLocaleDateString(undefined, { weekday: 'short' }).replace('.', '');
+                const opciones = { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true };
+                let fechaFormateada = fecha.toLocaleString(undefined, opciones).replace(',', '');
+                
+                // Mayúscula inicial en el día
+                const diaStr = diaNombre.charAt(0).toUpperCase() + diaNombre.slice(1);
+                
+                el.innerHTML = '<i class="fas fa-clock mr-1"></i> ' + diaStr + ' ' + fechaFormateada;
+            }
+        });
+    });
+    </script>
+</body>
+</html>

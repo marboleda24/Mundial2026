@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="jumbotron text-center border-0 shadow-none mt-5 p-5 card" style="background: transparent;">
+    <h1 class="display-3 font-weight-bold mb-4" style="color: var(--primary-color); text-shadow: 0 4px 15px rgba(241, 196, 15, 0.4);">Polla Mundial 2026</h1>
+    <p class="lead text-white font-weight-light mb-5" style="font-size: 1.5rem; max-width: 800px; margin: 0 auto;">
+        La plataforma definitiva para vivir la fiebre del fútbol. Únete a tus amigos, forma tu comunidad y demuestra quién es el verdadero rey de los pronósticos con transparencia total.
+    </p>
+    
+    {% if current_user.is_authenticated %}
+        <div class="mt-4 p-4 card d-inline-block text-left shadow-lg">
+            <h4 class="text-warning mb-3">👋  ¡Bienvenido de vuelta, {{ current_user.nombre_usuario }}!</h4>
+            <p class="text-muted">La cancha está lista. Tu comunidad te espera.</p>
+            <div class="mt-4 d-flex justify-content-center gap-3">
+                <a class="btn btn-warning btn-lg mx-2 px-5 py-3 shadow" href="{{ url_for('pollas.index') }}" role="button">
+                    <i class="fas fa-trophy mr-2"></i> Mis Torneos y Pollas
+                </a>
+            </div>
+        </div>
+    {% else %}
+        <div class="mt-4">
+            <a class="btn btn-warning btn-lg px-5 py-3 shadow-lg text-dark mx-2" href="{{ url_for('autenticacion.registro') }}" role="button" style="font-size: 1.3rem;">
+                Comenzar Aventura <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+            <a class="btn btn-outline-light btn-lg px-5 py-3 mx-2" href="{{ url_for('autenticacion.login') }}" role="button">
+                Ya tengo cuenta
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row mt-5 text-center">
+    <div class="col-md-4 mb-4">
+        <div class="card p-4 h-100 border-0">
+            <i class="fas fa-shield-alt fa-3x text-info mb-3"></i>
+            <h4 class="text-white">Transparencia Total</h4>
+            <p class="text-muted">Cada punto está auditado. Nada de reglas por debajo de la mesa. Tú y tus amigos dictan el juego.</p>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card p-4 h-100 border-0">
+            <i class="fas fa-bolt fa-3x text-warning mb-3"></i>
+            <h4 class="text-white">Motor Preciso</h4>
+            <p class="text-muted">Cálculo en vivo de posiciones apenas suene el pitazo final. Aciertos exactos y tendencias de ganadores.</p>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card p-4 h-100 border-0">
+            <i class="fas fa-users-cog fa-3x text-success mb-3"></i>
+            <h4 class="text-white">Gobernanza (DAO)</h4>
+            <p class="text-muted">Próximamente: Las reglas de la polla se someterán a votación comunitaria. ¡Democracia futbolera!</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
