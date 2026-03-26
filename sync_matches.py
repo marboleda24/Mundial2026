@@ -9,7 +9,7 @@ from aplicacion.integraciones import obtener_adaptador
 # Hemos cambiado a Football-Data.org (ID: "footballdata")
 PROVEEDOR_ACTIVO = "footballdata" 
 # Modifica esta cadena con tu token gratuito creado en football-data.org
-API_KEY = os.environ.get("FOOTBALL_API_KEY", "pega_aqui_tu_token_gratis_football_data")
+API_KEY = os.environ.get("FOOTBALL_API_KEY", "1f0345e601be416db95eabbf090149a2")
 
 # En football-data.org, la copa del mundo suele usar el código 'WC' o '2000'
 API_TORNEO_ID = "WC" 

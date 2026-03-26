@@ -2,6 +2,52 @@ import requests
 from datetime import datetime, timezone
 from .api_base import ProveedorAPI
 
+# Traducciones de equipos al español
+TRANSLATIONS_TEAMS = {
+    "Argentina": "Argentina",
+    "Brazil": "Brasil",
+    "France": "Francia",
+    "England": "Inglaterra",
+    "Spain": "España",
+    "Germany": "Alemania",
+    "Portugal": "Portugal",
+    "Netherlands": "Países Bajos",
+    "Italy": "Italia",
+    "Belgium": "Bélgica",
+    "Croatia": "Croacia",
+    "Uruguay": "Uruguay",
+    "Colombia": "Colombia",
+    "Mexico": "México",
+    "United States": "Estados Unidos",
+    "Morocco": "Marruecos",
+    "Japan": "Japón",
+    "Senegal": "Senegal",
+    "South Korea": "Corea del Sur",
+    "Australia": "Australia",
+    "Denmark": "Dinamarca",
+    "Switzerland": "Suiza",
+    "Ecuador": "Ecuador",
+    "Chile": "Chile",
+    "Peru": "Perú",
+    "Iran": "Irán",
+    "Saudi Arabia": "Arabia Saudita",
+    "Canada": "Canadá",
+    "Costa Rica": "Costa Rica",
+    "Poland": "Polonia",
+    # Agregar más si es necesario
+}
+
+# Traducciones de fases/jornadas
+TRANSLATIONS_STAGES = {
+    "GROUP_STAGE": "Fase de Grupos",
+    "ROUND_OF_16": "Octavos de Final",
+    "QUARTER_FINALS": "Cuartos de Final",
+    "SEMI_FINALS": "Semifinales",
+    "FINAL": "Final",
+    "THIRD_PLACE": "Tercer Puesto",
+    # Agregar más
+}
+
 class FootballDataAdapter(ProveedorAPI):
     BASE_URL = "https://api.football-data.org/v4"
 
@@ -19,9 +65,11 @@ class FootballDataAdapter(ProveedorAPI):
         data = resp.json()
         equipos = []
         for t in data.get('teams', []):
+            nombre_original = t.get('name', 'TBD')
+            nombre_traducido = TRANSLATIONS_TEAMS.get(nombre_original, nombre_original)
             equipos.append({
                 'id_proveedor': str(t['id']),
-                'nombre': t.get('name', 'TBD'),
+                'nombre': nombre_traducido,
                 'bandera_url': t.get('crest', '')
             })
         return equipos
@@ -66,6 +114,7 @@ class FootballDataAdapter(ProveedorAPI):
 
             jornada = m.get('matchday')
             nombre_jornada = f"Jornada {jornada}" if jornada else m.get('stage', 'Fase de Grupos')
+            nombre_jornada = TRANSLATIONS_STAGES.get(nombre_jornada, nombre_jornada)
 
             partidos.append({
                 'id_proveedor': str(m['id']),

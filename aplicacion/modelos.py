@@ -44,6 +44,9 @@ class ParticipantePolla(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), primary_key=True)
     polla_id = db.Column(db.Integer, db.ForeignKey('pollas.id'), primary_key=True)
     es_administrador_polla = db.Column(db.Boolean, default=False)
+    campeon_pred = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
+    subcampeon_pred = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
+    tercer_puesto_pred = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
     comentarios = db.Column(db.Text, nullable=True)
 
 class Equipo(db.Model):

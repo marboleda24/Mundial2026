@@ -37,23 +37,35 @@ def index():
 @pollas_bp.route('/crear', methods=['GET', 'POST'])
 @login_required
 def crear():
-    obtener_o_crear_torneo_base()
-    torneos = Torneo.query.all()
+    # Asegurar que existe el torneo Mundial 2026
+    torneo_mundial = Torneo.query.filter_by(nombre="Mundial 2026").first()
+    if not torneo_mundial:
+        torneo_mundial = Torneo(
+            nombre="Mundial 2026", 
+            ano=2026, 
+            estado="Activo", 
+            proveedor_api="footballdata", 
+            api_torneo_id="WC", 
+            comentarios="Torneo Mundial 2026 autogenerado"
+        )
+        db.session.add(torneo_mundial)
+        db.session.commit()
+    
+    torneos = [torneo_mundial]  # Solo mostrar Mundial 2026
     
     if request.method == 'POST':
         nombre = request.form.get('nombre')
         descripcion = request.form.get('descripcion')
-        torneo_id = request.form.get('torneo_id')
         es_publica = request.form.get('es_publica') == 'on'
         
-        if not nombre or not torneo_id:
-            flash("El nombre y el torneo son obligatorios.", "danger")
+        if not nombre:
+            flash("El nombre es obligatorio.", "danger")
             return redirect(url_for('pollas.crear'))
             
         nueva_polla = Polla(
             nombre=nombre,
             descripcion=descripcion,
-            torneo_id=torneo_id,
+            torneo_id=torneo_mundial.id,  # Forzar Mundial 2026
             creador_id=current_user.id,
             es_publica=es_publica,
             comentarios="Polla creada por el usuario."

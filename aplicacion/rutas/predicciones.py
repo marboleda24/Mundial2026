@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from aplicacion.extensiones import db
 from aplicacion.modelos import Partido, Prediccion, Polla, Torneo, ParticipantePolla, Equipo
 from datetime import datetime, timezone
+from collections import defaultdict
 
 predicciones_bp = Blueprint('predicciones', __name__, url_prefix='/predicciones')
 
@@ -20,10 +21,28 @@ def ingresar(polla_id):
     mis_predicciones = Prediccion.query.filter_by(usuario_id=current_user.id, polla_id=polla_id).all()
     pred_dict = {p.partido_id: p for p in mis_predicciones}
     
+    # Agrupar partidos por jornada
+    jornadas = defaultdict(list)
+    for partido in partidos:
+        jornada = partido.jornada or "Sin Jornada"
+        jornadas[jornada].append(partido)
+    
     # Traer todos los equipos en caché rápida
     equipos_dict = {e.id: e for e in Equipo.query.all()}
     
     if request.method == 'POST':
+        # Manejar predicciones de posiciones
+        campeon = request.form.get('campeon_pred')
+        subcampeon = request.form.get('subcampeon_pred')
+        tercer_puesto = request.form.get('tercer_puesto_pred')
+        
+        if campeon and campeon.isdigit():
+            participante.campeon_pred = int(campeon)
+        if subcampeon and subcampeon.isdigit():
+            participante.subcampeon_pred = int(subcampeon)
+        if tercer_puesto and tercer_puesto.isdigit():
+            participante.tercer_puesto_pred = int(tercer_puesto)
+        
         for key, value in request.form.items():
             if key.startswith('pred_local_'):
                 partido_id = int(key.split('_')[2])
@@ -55,4 +74,4 @@ def ingresar(polla_id):
         return redirect(url_for('predicciones.ingresar', polla_id=polla_id))
         
     ahora = datetime.now(timezone.utc).replace(tzinfo=None)
-    return render_template('predicciones/ingresar.html', polla=polla, partidos=partidos, pred_dict=pred_dict, equipos_dict=equipos_dict, ahora=ahora)
+    return render_template('predicciones/ingresar.html', polla=polla, jornadas=jornadas, pred_dict=pred_dict, equipos_dict=equipos_dict, ahora=ahora, participante=participante)
