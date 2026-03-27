@@ -55,10 +55,9 @@ def registro():
             flash('¡Registro exitoso! Bienvenido a la fiebre del fútbol.', 'success')
             
             # Recoger invitación en espera
-            inv_id = session.get('invitacion_id')
-            inv_token = session.get('invitacion_token')
-            if inv_id and inv_token:
-                return redirect(url_for('pollas.invitacion', id=inv_id, token=inv_token))
+            inv_codigo = session.get('invitacion_codigo')
+            if inv_codigo:
+                return redirect(url_for('pollas.invitacion', code=inv_codigo))
                 
             return redirect(url_for('principal.index'))
         except Exception as e:
@@ -89,10 +88,9 @@ def login():
             flash(f'¡Bienvenido de vuelta, {usuario.nombre_usuario}!', 'success')
             
             # Rescatar invitación
-            inv_id = session.get('invitacion_id')
-            inv_token = session.get('invitacion_token')
-            if inv_id and inv_token:
-                return redirect(url_for('pollas.invitacion', id=inv_id, token=inv_token))
+            inv_codigo = session.get('invitacion_codigo')
+            if inv_codigo:
+                return redirect(url_for('pollas.invitacion', code=inv_codigo))
             
             next_page = request.args.get('next')
             if not next_page or not next_page.startswith('/'):

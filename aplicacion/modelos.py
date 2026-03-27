@@ -49,6 +49,7 @@ class ParticipantePolla(db.Model):
     tercer_puesto_pred = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
     comentarios = db.Column(db.Text, nullable=True)
 
+
 class Equipo(db.Model):
     __tablename__ = 'equipos'
     id = db.Column(db.Integer, primary_key=True)
@@ -58,6 +59,12 @@ class Equipo(db.Model):
     comentarios = db.Column(db.Text, nullable=True)
 
 class Partido(db.Model):
+    __tablename__ = 'partidos'
+    id = db.Column(db.Integer, primary_key=True)
+    # ... assuming the rest of the lines are unchanged ...
+    # Wait, the file has 136 lines, I can't just replace the end with ellipsis if I don't know the content.
+    # Ah, I should use a more precise replacement or append.
+    # Let me actually read the trailing lines of modelos.py to append properly.
     __tablename__ = 'partidos'
     id = db.Column(db.Integer, primary_key=True)
     torneo_id = db.Column(db.Integer, db.ForeignKey('torneos.id'), nullable=False)
@@ -133,3 +140,14 @@ class LogAuditoria(db.Model):
     detalle_json = db.Column(db.Text, nullable=True)
     direccion_ip = db.Column(db.String(50), nullable=True)
     comentarios = db.Column(db.Text, nullable=True)
+
+class CodigoInvitacion(db.Model):
+    __tablename__ = 'codigos_invitacion'
+    id = db.Column(db.Integer, primary_key=True)
+    polla_id = db.Column(db.Integer, db.ForeignKey('pollas.id'), nullable=False)
+    codigo = db.Column(db.String(20), unique=True, nullable=False)
+    correo_destino = db.Column(db.String(120), nullable=True)
+    usado = db.Column(db.Boolean, default=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True) # Quién lo canjeó efectivamente
+    fecha_generacion = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_uso = db.Column(db.DateTime, nullable=True)

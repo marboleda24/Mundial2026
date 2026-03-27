@@ -1,10 +1,27 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 import hashlib
+import random
+import string
+import socket
+from datetime import datetime
 from flask_login import login_required, current_user
 from aplicacion.extensiones import db
-from aplicacion.modelos import Polla, Torneo, ParticipantePolla, ConfiguracionReglaPolla, Usuario
+from aplicacion.modelos import Polla, Torneo, ParticipantePolla, ConfiguracionReglaPolla, Usuario, CodigoInvitacion
+from aplicacion.utilidades.correo import enviar_invitacion_polla
 
 pollas_bp = Blueprint('pollas', __name__, url_prefix='/pollas')
+
+def obtener_ip_local():
+    """Obtiene la dirección IP en la red local (LAN) de este equipo."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('10.255.255.255', 1))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
 
 def generar_token_polla(polla_id):
     secret = current_app.config.get('SECRET_KEY', 'mundial_super_secreto')
@@ -103,66 +120,137 @@ def detalle(id):
     
     # Prevenir acceso a pollas privadas de las que no es miembro
     if not polla.es_publica and not participante:
-        flash("Esta polla es privada.", "danger")
+        flash("Debes usar un código de invitación para ver esta polla.", "danger")
         return redirect(url_for('pollas.index'))
         
     participantes = ParticipantePolla.query.filter_by(polla_id=id).all()
     reglas = ConfiguracionReglaPolla.query.filter_by(polla_id=id).all()
+    codigos_activos = CodigoInvitacion.query.filter_by(polla_id=id, usado=False).all() if (participante and participante.es_administrador_polla) else []
     
     # Diccionario rápido para evitar múltiples queries
     usuarios_dict = {u.id: u.nombre_usuario for u in Usuario.query.all()}
+    ip_local = obtener_ip_local()
     
-    return render_template('pollas/detalle.html', polla=polla, es_miembro=(participante is not None), es_admin=(participante and participante.es_administrador_polla), participantes=participantes, reglas=reglas, usuarios_dict=usuarios_dict)
+    return render_template('pollas/detalle.html', polla=polla, es_miembro=(participante is not None), es_admin=(participante and participante.es_administrador_polla), participantes=participantes, reglas=reglas, usuarios_dict=usuarios_dict, codigos_activos=codigos_activos, ip_local=ip_local)
 
 @pollas_bp.route('/<int:id>/unirse', methods=['POST'])
 @login_required
 def unirse(id):
     polla = Polla.query.get_or_404(id)
-    participante = ParticipantePolla.query.filter_by(usuario_id=current_user.id, polla_id=id).first()
+    codigo_ingresado = request.form.get('codigo_invitacion', '').strip().upper()
     
-    if not participante and polla.es_publica:
-        nuevo_miembro = ParticipantePolla(
-            usuario_id=current_user.id,
-            polla_id=id,
-            es_administrador_polla=False,
-            comentarios="Se unió públicamente"
-        )
-        db.session.add(nuevo_miembro)
-        db.session.commit()
-        flash(f"Te has unido a {polla.nombre} exitosamente.", "success")
-    
-    return redirect(url_for('pollas.detalle', id=id))
+    if not codigo_ingresado:
+        flash("Debes ingresar un código de invitación obligatorio.", "warning")
+        return redirect(url_for('pollas.detalle', id=id))
 
-@pollas_bp.route('/invitacion/<int:id>/<token>')
-def invitacion(id, token):
-    if token != generar_token_polla(id):
-        flash("El enlace de invitación es inválido o ha caducado.", "danger")
-        return redirect(url_for('principal.index'))
+    codigo_obj = CodigoInvitacion.query.filter_by(codigo=codigo_ingresado, polla_id=id, usado=False).first()
     
-    polla = Polla.query.get_or_404(id)
-    
-    if not current_user.is_authenticated:
-        session['invitacion_id'] = id
-        session['invitacion_token'] = token
-        flash("Crea tu cuenta o inicia sesión para unirte automáticamente a la comunidad.", "info")
-        return redirect(url_for('autenticacion.registro'))
-        
+    if not codigo_obj:
+        flash("Código de invitación inválido, inexistente o ya ha sido utilizado.", "danger")
+        return redirect(url_for('pollas.detalle', id=id))
+
+    if codigo_obj.correo_destino and codigo_obj.correo_destino.lower() != current_user.correo.lower():
+        flash(f"Este código es exclusivo para el correo: {codigo_obj.correo_destino}. No puedes canjearlo con tu cuenta actual.", "danger")
+        return redirect(url_for('pollas.detalle', id=id))
+
     participante = ParticipantePolla.query.filter_by(usuario_id=current_user.id, polla_id=id).first()
     if not participante:
         nuevo_miembro = ParticipantePolla(
             usuario_id=current_user.id,
             polla_id=id,
             es_administrador_polla=False,
-            comentarios="Se unió mediante enlace de invitación."
+            comentarios="Se unió mediante código de un solo uso."
         )
         db.session.add(nuevo_miembro)
-        db.session.commit()
-        flash(f"¡Te has unido a {polla.nombre} exitosamente mediante invitación!", "success")
         
-    session.pop('invitacion_id', None)
-    session.pop('invitacion_token', None)
+        codigo_obj.usado = True
+        codigo_obj.usuario_id = current_user.id
+        codigo_obj.fecha_uso = datetime.utcnow()
+        
+        db.session.commit()
+        flash(f"¡El código fue aceptado! Te has unido a {polla.nombre} exitosamente.", "success")
+    else:
+        flash("Ya eres miembro de esta polla.", "info")
     
     return redirect(url_for('pollas.detalle', id=id))
+
+@pollas_bp.route('/<int:id>/generar_codigo', methods=['POST'])
+@login_required
+def generar_codigo(id):
+    polla = Polla.query.get_or_404(id)
+    participante = ParticipantePolla.query.filter_by(usuario_id=current_user.id, polla_id=id).first()
+    
+    if not participante or not participante.es_administrador_polla:
+        flash("Solo el administrador puede generar nuevos códigos de acceso.", "danger")
+        return redirect(url_for('pollas.detalle', id=id))
+        
+    correo_destino = request.form.get('correo_destino', '').strip()
+    
+    # Generar un código aleatorio seguro (Ej: X9J-4KA2)
+    caracteres = string.ascii_uppercase + string.digits
+    nuevo_codigo = ''.join(random.choices(caracteres, k=3)) + '-' + ''.join(random.choices(caracteres, k=4))
+    
+    inv_obj = CodigoInvitacion(
+        polla_id=id,
+        codigo=nuevo_codigo,
+        correo_destino=correo_destino if correo_destino else None
+    )
+    db.session.add(inv_obj)
+    db.session.commit()
+    
+    if correo_destino:
+        # Reemplazar 127.0.0.1 o localhost por la IP de la red local
+        enlace_path = url_for('pollas.invitacion', code=nuevo_codigo)
+        enlace_lan = f"http://{obtener_ip_local()}:5000{enlace_path}"
+        
+        enviado, msg = enviar_invitacion_polla(correo_destino, polla.nombre, nuevo_codigo, current_user.nombre_usuario, enlace_lan)
+        if enviado:
+            flash(f"Se generó el código {nuevo_codigo} y fue enviado por correo a {correo_destino}.", "success")
+        else:
+            flash(f"El código {nuevo_codigo} fue generado, pero falló el envío del correo: {msg}", "warning")
+    else:
+        flash(f"Código manual generado: {nuevo_codigo}. Cópialo y compártelo de forma segura.", "success")
+        
+    return redirect(url_for('pollas.detalle', id=id))
+
+@pollas_bp.route('/invitacion/<code>')
+def invitacion(code):
+    codigo_obj = CodigoInvitacion.query.filter_by(codigo=code.upper(), usado=False).first()
+    if not codigo_obj:
+        flash("El código de invitación es inválido, introducido incorrectamente o ya fue usado.", "danger")
+        return redirect(url_for('principal.index'))
+    
+    polla = Polla.query.get_or_404(codigo_obj.polla_id)
+    
+    if not current_user.is_authenticated:
+        session['invitacion_codigo'] = codigo_obj.codigo
+        session['invitacion_polla_id'] = polla.id
+        flash(f"Tienes un pase VIP para {polla.nombre}. Crea tu cuenta con el correo al que te llegó la invitación para canjear tu código de acceso automático.", "info")
+        return redirect(url_for('autenticacion.registro'))
+
+    if codigo_obj.correo_destino and codigo_obj.correo_destino.lower() != current_user.correo.lower():
+        flash(f"Este enlace VIP es exclusivo para el correo: {codigo_obj.correo_destino}. Por favor, inicia sesión con la cuenta correspondiente.", "danger")
+        return redirect(url_for('autenticacion.login'))
+        
+    participante = ParticipantePolla.query.filter_by(usuario_id=current_user.id, polla_id=polla.id).first()
+    if not participante:
+        nuevo_miembro = ParticipantePolla(
+            usuario_id=current_user.id,
+            polla_id=polla.id,
+            es_administrador_polla=False,
+            comentarios="Se unió mediante enlace de invitación VIP."
+        )
+        db.session.add(nuevo_miembro)
+        codigo_obj.usado = True
+        codigo_obj.usuario_id = current_user.id
+        codigo_obj.fecha_uso = datetime.utcnow()
+        db.session.commit()
+        flash(f"¡Te has unido a {polla.nombre} exitosamente canjeando tu código VIP!", "success")
+        
+    session.pop('invitacion_codigo', None)
+    session.pop('invitacion_polla_id', None)
+    
+    return redirect(url_for('pollas.detalle', id=polla.id))
 
 @pollas_bp.route('/<int:id>/reglas', methods=['POST'])
 @login_required

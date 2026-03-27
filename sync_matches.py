@@ -46,13 +46,13 @@ def sync_matches():
         torneo = asegurar_torneo()
         
         print("-" * 60)
-        print(f"💡 Iniciando Sincronización Inteligente Multi-API")
-        print(f"🏟  Torneo: {torneo.nombre} ({torneo.api_torneo_id})")
-        print(f"🔌 Proveedor Activo (DB): {torneo.proveedor_api.upper()}")
+        print(f"> Iniciando Sincronizacion Inteligente Multi-API")
+        print(f"> Torneo: {torneo.nombre} ({torneo.api_torneo_id})")
+        print(f"> Proveedor Activo (DB): {torneo.proveedor_api.upper()}")
         print("-" * 60)
         
         if API_KEY == "pega_aqui_tu_token_gratis_football_data":
-            print("❌ ERROR GRAVE: Abre el archivo sync_matches.py y reemplaza `pega_aqui_tu_token_gratis_football_data` con tu Token.")
+            print("[ERROR GRAVE] Abre el archivo sync_matches.py y reemplaza `pega_aqui_tu_token_gratis_football_data` con tu Token.")
             print("Para conseguir uno ve a: https://www.football-data.org/client/register")
             return
 
@@ -60,15 +60,15 @@ def sync_matches():
         try:
             adapter = obtener_adaptador(torneo.proveedor_api, API_KEY)
         except ValueError as e:
-            print(f"❌ Error fatal de sistema: {e}")
+            print(f"[ERROR] Error fatal de sistema: {e}")
             return
             
         # 2. Extracción de Equipos
-        print("📡 Conectando a la API para capturar Selecciones / Equipos...")
+        print("> Conectando a la API para capturar Selecciones / Equipos...")
         equipos_api = adapter.obtener_equipos(torneo.api_torneo_id)
         
         if not equipos_api:
-            print("⚠️ Advertencia: No se retornaron equipos. ¿Quizás el ID de Torneo (WC) no está disponible para tu plan?")
+            print("[ADVERTENCIA] No se retornaron equipos. ¿Quizas el ID de Torneo (WC) no esta disponible para tu plan?")
             return
             
         equipos_insertados = 0
@@ -89,10 +89,10 @@ def sync_matches():
                 db.session.add(equipo)
                 equipos_insertados += 1
         db.session.commit()
-        print(f"✅ Se validaron {len(equipos_api)} selecciones terrestres. Fueron creadas {equipos_insertados} nuevas.")
+        print(f"[*] Se validaron {len(equipos_api)} selecciones terrestres. Fueron creadas {equipos_insertados} nuevas.")
         
         # 3. Extracción de Calendarios y Marcadores
-        print("\n📡 Conectando a la API para actualizar Partidos y Scores en vivo...")
+        print("\n> Conectando a la API para actualizar Partidos y Scores en vivo...")
         partidos_api = adapter.obtener_partidos(torneo.api_torneo_id)
         
         partidos_insertados = 0
@@ -128,9 +128,9 @@ def sync_matches():
                 partidos_actualizados += 1
                 
         db.session.commit()
-        print(f"✅ Se sincronizó el calendario. {partidos_insertados} Registrados / {partidos_actualizados} Actualizados.")
+        print(f"[*] Se sincronizo el calendario. {partidos_insertados} Registrados / {partidos_actualizados} Actualizados.")
         print("-" * 60)
-        print("🏆 Arquitectura Multi-API corriendo a la perfección. Sincronización finalizada exitosamente.")
+        print("[EXITO] Arquitectura Multi-API corriendo a la perfeccion. Sincronizacion finalizada exitosamente.")
 
 if __name__ == "__main__":
     sync_matches()
