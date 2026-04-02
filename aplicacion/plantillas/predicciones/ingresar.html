@@ -16,18 +16,26 @@
             <!-- Predicciones de Posiciones -->
             <!-- Predicciones de Posiciones -->
             <div class="row mb-4">
-                <div class="col-md-12 mb-3">
-                    <h5 class="mb-0 text-dark border-bottom pb-2"><i class="fas fa-medal text-warning"></i> Predicciones Finales</h5>
+                <div class="col-md-12 mb-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-dark border-bottom pb-2"><i class="fas fa-medal text-warning"></i> Predicciones Finales y Goleador</h5>
+                    {% if deadline_torneo %}
+                        {% if ahora < deadline_torneo %}
+                            <span class="badge badge-info"><i class="fas fa-hourglass-half"></i> Cierra en: {{ ((deadline_torneo - ahora).total_seconds() / 3600)|round(1) }} horas</span>
+                        {% else %}
+                            <span class="badge badge-danger"><i class="fas fa-lock"></i> Bloqueado (Mundial Iniciado)</span>
+                        {% endif %}
+                    {% endif %}
                 </div>
                 
-                <div class="col-md-4 mb-3">
-                    <div class="card h-100" style="border: 1px solid #333642; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 12px; transform: scale(1.02); z-index: 2; transition: all 0.3s ease;">
-                        <div class="card-header font-weight-bold text-center" style="background: linear-gradient(135deg, #1f2129 0%, #111216 100%); border-bottom: 1px solid #2a2c35; border-radius: 11px 11px 0 0;">
-                            <i class="fas fa-trophy fa-2x mb-2 d-block" style="color: #D4AF37; text-shadow: 0 0 8px rgba(212,175,55,0.4);"></i>
-                            <span style="font-size: 1.05rem; text-transform: uppercase; letter-spacing: 2px; color: #FFFFFF; font-weight: 500;">Campeón</span>
+                {% set tor_bloqueado = deadline_torneo and ahora >= deadline_torneo %}
+
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 shadow-sm {{ 'opacity-75' if tor_bloqueado else '' }}">
+                        <div class="card-header font-weight-bold text-center bg-dark text-white py-2">
+                            <i class="fas fa-trophy text-warning d-block mb-1"></i> CAMPEÓN
                         </div>
-                        <div class="card-body d-flex align-items-center" style="background-color: #111827; border-radius: 0 0 11px 11px;">
-                            <select name="campeon_pred" id="campeon_pred" class="form-control form-control-lg text-center font-weight-bold" style="border: 1px solid #374151; background-color: #1f2937; color: #f9fafb; box-shadow: 0 1px 3px rgba(0,0,0,0.5); cursor: pointer;">
+                        <div class="card-body p-2">
+                            <select name="campeon_pred" class="form-control form-control-sm" {{ 'disabled' if tor_bloqueado else '' }}>
                                 <option value="">Seleccionar...</option>
                                 {% for eq_id, eq in equipos_dict.items() %}
                                 <option value="{{ eq_id }}" {% if participante.campeon_pred == eq_id %}selected{% endif %}>{{ eq.nombre }}</option>
@@ -37,14 +45,13 @@
                     </div>
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    <div class="card h-100" style="border: 1px solid #333642; box-shadow: 0 6px 16px rgba(0,0,0,0.1); border-radius: 12px; transition: all 0.3s ease;">
-                        <div class="card-header font-weight-bold text-center" style="background: linear-gradient(135deg, #1f2129 0%, #15161b 100%); border-bottom: 1px solid #2a2c35; border-radius: 11px 11px 0 0;">
-                            <i class="fas fa-medal fa-2x mb-2 d-block" style="color: #E2E8F0; text-shadow: 0 0 6px rgba(226,232,240,0.3);"></i>
-                            <span style="font-size: 1.05rem; text-transform: uppercase; letter-spacing: 2px; color: #FFFFFF; font-weight: 500;">Subcampeón</span>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 shadow-sm {{ 'opacity-75' if tor_bloqueado else '' }}">
+                        <div class="card-header font-weight-bold text-center bg-dark text-white py-2">
+                            <i class="fas fa-medal text-light d-block mb-1"></i> SUBCAMPEÓN
                         </div>
-                        <div class="card-body d-flex align-items-center" style="background-color: #111827; border-radius: 0 0 11px 11px;">
-                            <select name="subcampeon_pred" id="subcampeon_pred" class="form-control form-control-lg text-center font-weight-bold" style="border: 1px solid #374151; background-color: #1f2937; color: #f9fafb; box-shadow: 0 1px 3px rgba(0,0,0,0.5); cursor: pointer;">
+                        <div class="card-body p-2">
+                            <select name="subcampeon_pred" class="form-control form-control-sm" {{ 'disabled' if tor_bloqueado else '' }}>
                                 <option value="">Seleccionar...</option>
                                 {% for eq_id, eq in equipos_dict.items() %}
                                 <option value="{{ eq_id }}" {% if participante.subcampeon_pred == eq_id %}selected{% endif %}>{{ eq.nombre }}</option>
@@ -54,17 +61,33 @@
                     </div>
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    <div class="card h-100" style="border: 1px solid #333642; box-shadow: 0 6px 16px rgba(0,0,0,0.1); border-radius: 12px; transition: all 0.3s ease;">
-                        <div class="card-header font-weight-bold text-center" style="background: linear-gradient(135deg, #1f2129 0%, #15161b 100%); border-bottom: 1px solid #2a2c35; border-radius: 11px 11px 0 0;">
-                            <i class="fas fa-award fa-2x mb-2 d-block" style="color: #CD7F32; text-shadow: 0 0 6px rgba(205,127,50,0.3);"></i>
-                            <span style="font-size: 1.05rem; text-transform: uppercase; letter-spacing: 2px; color: #FFFFFF; font-weight: 500;">Tercer Puesto</span>
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 shadow-sm {{ 'opacity-75' if tor_bloqueado else '' }}">
+                        <div class="card-header font-weight-bold text-center bg-dark text-white py-2">
+                            <i class="fas fa-award text-warning d-block mb-1"></i> 3er PUESTO
                         </div>
-                        <div class="card-body d-flex align-items-center" style="background-color: #111827; border-radius: 0 0 11px 11px;">
-                            <select name="tercer_puesto_pred" id="tercer_puesto_pred" class="form-control form-control-lg text-center font-weight-bold" style="border: 1px solid #374151; background-color: #1f2937; color: #f9fafb; box-shadow: 0 1px 3px rgba(0,0,0,0.5); cursor: pointer;">
+                        <div class="card-body p-2">
+                            <select name="tercer_puesto_pred" class="form-control form-control-sm" {{ 'disabled' if tor_bloqueado else '' }}>
                                 <option value="">Seleccionar...</option>
                                 {% for eq_id, eq in equipos_dict.items() %}
                                 <option value="{{ eq_id }}" {% if participante.tercer_puesto_pred == eq_id %}selected{% endif %}>{{ eq.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN GOLEADOR (Tarea 7) -->
+                <div class="col-md-3 mb-3">
+                    <div class="card h-100 shadow-sm border-info {{ 'opacity-75' if tor_bloqueado else '' }}">
+                        <div class="card-header font-weight-bold text-center bg-info text-white py-2">
+                            <i class="fas fa-futbol d-block mb-1"></i> GOLEADOR
+                        </div>
+                        <div class="card-body p-2">
+                            <select name="goleador_pred" class="form-control form-control-sm border-info" {{ 'disabled' if tor_bloqueado else '' }}>
+                                <option value="">¿Quién anotará más?</option>
+                                {% for c in candidatos_goleador %}
+                                <option value="{{ c.id }}" {% if participante.goleador_pred == c.id %}selected{% endif %}>{{ c.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>

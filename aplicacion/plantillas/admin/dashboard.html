@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Super Administrador</title>
+    <!-- Incluir tu framework CSS aquí, asumo que usas Bootstrap según el ecosistema -> si no, puedes modificarlo -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h1 class="mb-4 text-primary">⚙️ Configuración Global del Sistema</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">🤖 Inteligencia Artificial Multiproveedor</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small">Selecciona el proveedor tecnológico y suministra la API Key para posibilitar al sistema generar trivias automáticas por día.</p>
+            
+            <form method="POST" action="{{ url_for('admin.dashboard') }}">
+                <div class="row">
+                    <div class="col-md-5 mb-3">
+                        <label for="llm_proveedor" class="form-label fw-bold">Proveedor LLM</label>
+                        <select class="form-select select-sm" id="llm_proveedor" name="llm_proveedor" required>
+                            <option value="gemini" {% if proveedor == 'gemini' %}selected{% endif %}>Google Gemini</option>
+                            <option value="openai" {% if proveedor == 'openai' %}selected{% endif %}>OpenAI (ChatGPT)</option>
+                            <option value="groq" {% if proveedor == 'groq' %}selected{% endif %}>Groq (Rápido)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7 mb-3">
+                        <label for="llm_api_key" class="form-label fw-bold">Clave de Acceso (API KEY)</label>
+                        <input type="password" class="form-control" id="llm_api_key" name="llm_api_key" value="{{ api_key }}" placeholder="sk-..." required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">💾 Guardar Configuración IA</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gestión de Goleadores -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-futbol"></i> Candidatos a Goleador del Mundial</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small">Registra aquí a los jugadores con más probabilidades de ser goleadores para que los usuarios los elijan en sus pollas.</p>
+            
+            <form method="POST" action="{{ url_for('admin.agregar_goleador') }}" class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <input type="text" name="nombre" class="form-control" placeholder="Nombre completo del jugador" required>
+                </div>
+                <div class="col-md-4">
+                    <select name="torneo_id" class="form-select" required>
+                        {% for t in torneos %}
+                            <option value="{{ t.id }}">{{ t.nombre }} ({{ t.ano }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-success">Añadir</button>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Torneo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in candidatos %}
+                        <tr>
+                            <td><strong>{{ c.nombre }}</strong></td>
+                            <td>{{ c.torneo_id }}</td> <!-- Aquí se podría traer el nombre del torneo con un join si fuera necesario -->
+                            <td>
+                                <form action="{{ url_for('admin.eliminar_goleador', id=c.id) }}" method="POST" onsubmit="return confirm('¿Remover a este candidato?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No hay candidatos registrados aún.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 pb-5">
+        <a href="{{ url_for('principal.index') }}" class="btn btn-outline-secondary">← Volver al Home</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

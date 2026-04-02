@@ -31,11 +31,13 @@ def crear_aplicacion():
     from aplicacion.rutas.principal import principal_bp
     from aplicacion.rutas.pollas import pollas_bp
     from aplicacion.rutas.predicciones import predicciones_bp
+    from aplicacion.rutas.admin import admin_bp
     
     app.register_blueprint(autenticacion_bp)
     app.register_blueprint(principal_bp)
     app.register_blueprint(pollas_bp)
     app.register_blueprint(predicciones_bp)
+    app.register_blueprint(admin_bp)
 
     return app
 

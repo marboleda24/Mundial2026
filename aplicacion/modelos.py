@@ -37,6 +37,8 @@ class Polla(db.Model):
     creador_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     es_publica = db.Column(db.Boolean, default=False)
+    requiere_votacion_reglas = db.Column(db.Boolean, default=False)
+    jugadores_pueden_proponer = db.Column(db.Boolean, default=False)
     comentarios = db.Column(db.Text, nullable=True)
 
 class ParticipantePolla(db.Model):
@@ -47,7 +49,16 @@ class ParticipantePolla(db.Model):
     campeon_pred = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
     subcampeon_pred = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
     tercer_puesto_pred = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
+    goleador_pred = db.Column(db.Integer, db.ForeignKey('candidatos_goleador.id'), nullable=True)
     comentarios = db.Column(db.Text, nullable=True)
+
+class CandidatoGoleador(db.Model):
+    __tablename__ = 'candidatos_goleador'
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    equipo_id = db.Column(db.Integer, db.ForeignKey('equipos.id'), nullable=True)
+    torneo_id = db.Column(db.Integer, db.ForeignKey('torneos.id'), nullable=False)
+    estado = db.Column(db.String(20), default='Activo')
 
 
 class Equipo(db.Model):
@@ -151,3 +162,39 @@ class CodigoInvitacion(db.Model):
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True) # Quién lo canjeó efectivamente
     fecha_generacion = db.Column(db.DateTime, default=datetime.utcnow)
     fecha_uso = db.Column(db.DateTime, nullable=True)
+
+# ==========================================
+# MODELOS PARA TRIVIA DIARIA E INTELIGENCIA ARTIFICIAL
+# ==========================================
+
+class ConfiguracionGlobal(db.Model):
+    __tablename__ = 'configuracion_global'
+    id = db.Column(db.Integer, primary_key=True)
+    clave = db.Column(db.String(100), unique=True, nullable=False)
+    valor = db.Column(db.Text, nullable=True)
+    descripcion = db.Column(db.String(255), nullable=True)
+
+class PreguntaTrivia(db.Model):
+    __tablename__ = 'preguntas_trivia'
+    id = db.Column(db.Integer, primary_key=True)
+    fecha_para_mostrar = db.Column(db.Date, unique=True, nullable=False)
+    pregunta = db.Column(db.Text, nullable=False)
+    opcion_a = db.Column(db.String(255), nullable=False)
+    opcion_b = db.Column(db.String(255), nullable=False)
+    opcion_c = db.Column(db.String(255), nullable=False)
+    opcion_d = db.Column(db.String(255), nullable=False)
+    opcion_correcta = db.Column(db.String(1), nullable=False) # 'A', 'B', 'C', 'D'
+    explicacion = db.Column(db.Text, nullable=True)
+    proveedor_generador = db.Column(db.String(50), nullable=True) # ej. 'openai', 'gemini'
+    fecha_generacion = db.Column(db.DateTime, default=datetime.utcnow)
+
+class RespuestaTriviaUsuario(db.Model):
+    __tablename__ = 'respuestas_trivia_usuario'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    polla_id = db.Column(db.Integer, db.ForeignKey('pollas.id'), nullable=True)
+    pregunta_id = db.Column(db.Integer, db.ForeignKey('preguntas_trivia.id'), nullable=False)
+    opcion_elegida = db.Column(db.String(1), nullable=False)
+    es_correcta = db.Column(db.Boolean, nullable=False)
+    puntos_obtenidos = db.Column(db.Integer, default=0)
+    fecha_respuesta = db.Column(db.DateTime, default=datetime.utcnow)

@@ -33,9 +33,24 @@
                     </select>
                 </div>
                 
-                <div class="form-group form-check mt-3 mb-4">
+                <div class="form-group form-check mt-3">
                     <input type="checkbox" class="form-check-input" id="es_publica" name="es_publica">
                     <label class="form-check-label" for="es_publica"><strong>Hacer Pública</strong> (Cualquiera en la plataforma podrá unirse a competir)</label>
+                </div>
+
+                <div class="card bg-dark text-white border-info mb-4 p-3 shadow-sm rounded">
+                    <h5 class="text-info"><i class="fas fa-users-cog"></i> Gobernanza y Consenso (DAO)</h5>
+                    <p class="small text-muted mb-3">Define cómo tu comunidad creará y aceptará las reglas y puntajes.</p>
+                    
+                    <div class="form-group form-check mb-2">
+                        <input type="checkbox" class="form-check-input" id="requiere_votacion" name="requiere_votacion">
+                        <label class="form-check-label" for="requiere_votacion"><strong>Reglas por Votación</strong> (Toda nueva regla requiere el >50% de aprobación para activarse)</label>
+                    </div>
+                    
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="permitir_propuestas" name="permitir_propuestas">
+                        <label class="form-check-label" for="permitir_propuestas"><strong>Democracia Total</strong> (Los usuarios pueden sugerir sus propias reglas. Si está apagado, solo el Admin puede proponerlas.)</label>
+                    </div>
                 </div>
                 
                 <button type="submit" class="btn btn-success btn-block btn-lg">Generar Universo de Polla</button>

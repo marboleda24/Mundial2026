@@ -36,7 +36,16 @@
             </div>
             <div class="card-body">
                 <!-- Se podría someter a votación las reglas, por ahora el admin impone -->
-                {% if es_admin %}
+                {% if polla.requiere_votacion_reglas %}
+                    <div class="alert alert-warning small border-warning" style="background: rgba(241,196,15,0.1);">
+                        <i class="fas fa-gavel"></i> <strong>Gobernanza Activa:</strong> Los puntos de estas reglas se definen por consenso democrático. 
+                        {% if not gobernanza_cerrada %}
+                            Las votaciones cierran 48h antes del mundial.
+                        {% else %}
+                            La mesa ha cerrado. Los valores mostrados son finales.
+                        {% endif %}
+                    </div>
+                {% elif es_admin %}
                     <p class="text-info small"><i class="fas fa-info-circle"></i> Como administrador puedes alterar directamente el peso en puntos de cada regla.</p>
                 {% else %}
                     <p class="text-muted small">Estas son las reglas impuestas con las que se calcularán tus pronósticos.</p>
@@ -47,18 +56,17 @@
                         <thead class="border-0">
                             <tr>
                                 <th>Condición de Juego</th>
-                                <th>Puntos a otorgar</th>
+                                <th>Puntos Definidos</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for regla in reglas %}
+                            {% for regla in reglas_aprobadas %}
                             <tr>
                                 <td>
-                                    <strong>{{ regla.tipo_regla }}</strong><br>
-                                    <small class="text-muted">{{ regla.comentarios }}</small>
+                                    <strong>{{ regla.tipo_regla }}</strong>
                                 </td>
                                 <td>
-                                    {% if es_admin %}
+                                    {% if es_admin and not polla.requiere_votacion_reglas %}
                                         <input type="number" class="form-control form-control-sm w-50" name="regla_{{ regla.id }}" value="{{ regla.puntos_asignados }}" min="0" required>
                                     {% else %}
                                         <h5><span class="badge badge-primary">{{ regla.puntos_asignados }} puntos</span></h5>
@@ -68,14 +76,91 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    {% if es_admin %}
+                    {% if es_admin and not polla.requiere_votacion_reglas %}
                         <button type="submit" class="btn btn-sm btn-outline-success">Guardar Cambios de Reglas</button>
                     {% endif %}
                 </form>
             </div>
         </div>
+        <!-- GOBERNANZA Y PROPUESTAS DE REGLAS (DAO) -->
+        {% if polla.requiere_votacion_reglas %}
+        <div class="card shadow border-0 mt-4">
+            <div class="card-header border-0 d-flex justify-content-between align-items-center" style="background: rgba(241, 196, 15, 0.2);">
+                <h4 class="mb-0 text-warning"><i class="fas fa-users-cog"></i> Votaciones Activas (DAO)</h4>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <p class="text-muted small mb-0">
+                        {% if not gobernanza_cerrada %}
+                            Propón un nuevo puntaje para las reglas. La opción más votada gana. <strong>Voto del Admin vale x2 en empate.</strong>
+                        {% else %}
+                            <span class="text-danger font-weight-bold"><i class="fas fa-lock"></i> Votaciones Cerradas.</span> Los resultados han sido aplicados.
+                        {% endif %}
+                    </p>
+                    {% if deadline_gobernanza and not gobernanza_cerrada %}
+                        <span class="badge badge-dark p-2" id="countdown-dao" data-deadline="{{ deadline_gobernanza.isoformat() }}">Cargando cierre...</span>
+                    {% endif %}
+                </div>
+                
+                {% if not gobernanza_cerrada and (polla.jugadores_pueden_proponer or es_admin) %}
+                <button class="btn btn-sm btn-warning mb-4" type="button" data-toggle="collapse" data-target="#propuestaForm">
+                    <i class="fas fa-plus"></i> Proponer Cambio de Puntaje
+                </button>
+                
+                <div class="collapse mb-4" id="propuestaForm">
+                    <div class="card card-body bg-dark border-warning text-white">
+                        <form action="{{ url_for('pollas.proponer_regla', id=polla.id) }}" method="POST">
+                            <div class="form-row">
+                                <div class="col-md-7 mb-3">
+                                    <label>Regla a Modificar</label>
+                                    <select class="form-control" name="tipo_regla" required>
+                                        {% for regla in reglas_aprobadas %}
+                                            <option value="{{ regla.tipo_regla }}">{{ regla.tipo_regla }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-5 mb-3">
+                                    <label>Nuevo Peso Sugerido (Pts)</label>
+                                    <input type="number" class="form-control" name="puntos_asignados" placeholder="Ej: 10" required min="0">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-warning btn-sm btn-block">Publicar Propuesta para Votación</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if reglas_propuestas %}
+                <div class="list-group list-group-flush bg-transparent">
+                    {% for propuesta in reglas_propuestas %}
+                    {% set votos_favorables = VotoRegla.query.filter_by(regla_id=propuesta.id).count() %}
+                    {% set total_participantes = participantes|length %}
+                    
+                    <div class="list-group-item bg-transparent text-white border-secondary mb-3 rounded" style="background: rgba(255,255,255,0.05) !important;">
+                        <div class="d-flex w-100 justify-content-between align-items-center">
+                            <h5 class="mb-1 text-info">{{ propuesta.tipo_regla }}: <span class="text-warning">{{ propuesta.puntos_asignados }} pts</span></h5>
+                            <span class="badge badge-primary px-3 py-2"><i class="fas fa-check-circle"></i> {{ votos_favorables }} Votos</span>
+                        </div>
+                        
+                        {% if not gobernanza_cerrada %}
+                        <div class="mt-3">
+                            <form action="{{ url_for('pollas.votar_regla', id=polla.id, regla_id=propuesta.id) }}" method="POST">
+                                <button type="submit" class="btn btn-sm btn-outline-info btn-block"><i class="fas fa-vote-yea"></i> Votar por esta opción</button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                {% if not gobernanza_cerrada %}
+                    <div class="alert alert-dark border-0 mt-2 text-center text-muted">No hay propuestas de cambio de puntaje activas.</div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
         
-        <!-- Módulo de Invitaciones Privadas (Solo Admin) -->
         {% if es_admin %}
         <div class="card shadow-lg border-0 mt-4">
             <div class="card-header border-0 text-white" style="background: rgba(155, 89, 182, 0.4);">
@@ -144,4 +229,31 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const countdownEl = document.getElementById('countdown-dao');
+    if (countdownEl) {
+        const deadline = new Date(countdownEl.dataset.deadline + 'Z');
+        
+        function updateCountdown() {
+            const now = new Date();
+            const diff = deadline - now;
+            
+            if (diff <= 0) {
+                countdownEl.innerHTML = '<i class="fas fa-gavel"></i> Cierre Inminente...';
+                location.reload(); // Recargar para procesar escrutinio
+                return;
+            }
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            countdownEl.innerHTML = `<i class="fas fa-hourglass-half"></i> Cierra en: ${hours}h ${mins}m`;
+        }
+        
+        setInterval(updateCountdown, 60000);
+        updateCountdown();
+    }
+});
+</script>
 {% endblock %}
