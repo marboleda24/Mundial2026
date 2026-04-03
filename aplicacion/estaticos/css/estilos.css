@@ -72,6 +72,7 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 1.5rem;
     background: linear-gradient(90deg, #f1c40f, #e67e22);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     letter-spacing: -0.5px;
 }
@@ -112,19 +113,49 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
 }
 
-/* Inputs & Forms */
+/* Inputs & Forms - Enhanced Contrast */
 .form-control {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--card-border);
-    color: var(--text-color);
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
     border-radius: 8px;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .form-control:focus {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(241, 196, 15, 0.2);
+    background: rgba(0, 0, 0, 0.7) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.3) !important;
+}
+
+/* Specific styling for <select> elements in Dark Mode */
+select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23f1c40f' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.2rem;
+    padding-right: 2.5rem;
+}
+
+select.form-control option {
+    background-color: #1c1c1c;
+    color: #ffffff;
+    padding: 10px;
+}
+
+/* Utility classes for high contrast */
+.text-highlight {
     color: #fff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    font-weight: 600;
+}
+.text-gold {
+    color: var(--primary-color) !important;
+    font-weight: 700;
+}
+.text-vibrant-info {
+    color: #00d2ff !important;
 }
 
 /* Tables matching Dark Theme */

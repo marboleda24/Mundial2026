@@ -84,10 +84,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for c in candidatos %}
+                        {% for c, nombre_torneo in candidatos %}
                         <tr>
                             <td><strong>{{ c.nombre }}</strong></td>
-                            <td>{{ c.torneo_id }}</td> <!-- Aquí se podría traer el nombre del torneo con un join si fuera necesario -->
+                            <td>{{ nombre_torneo }} <small class="text-muted">(ID: {{ c.torneo_id }})</small></td>
                             <td>
                                 <form action="{{ url_for('admin.eliminar_goleador', id=c.id) }}" method="POST" onsubmit="return confirm('¿Remover a este candidato?');">
                                     <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>

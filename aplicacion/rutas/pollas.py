@@ -67,17 +67,18 @@ def crear():
         admin_participante = ParticipantePolla(usuario_id=current_user.id, polla_id=nueva_polla.id, es_administrador_polla=True)
         db.session.add(admin_participante)
         
+        estado_inicial = 'Propuesta' if requiere_votacion else 'Aprobada'
         reglas_base = [
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Exacto (Pleno)", puntos_asignados=5),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Ganador (Tendencia)", puntos_asignados=3),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Goles de un Equipo", puntos_asignados=1),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Diferencia de Goles", puntos_asignados=2),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar el Campeón", puntos_asignados=10),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar el Subcampeón", puntos_asignados=7),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar el Tercer Puesto", puntos_asignados=5),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Atinar los 3 del Podio", puntos_asignados=15),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Trivia Diaria (Módulo IA)", puntos_asignados=2),
-            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar Goleador del Mundial", puntos_asignados=10),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Exacto (Pleno)", puntos_asignados=5, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Ganador (Tendencia)", puntos_asignados=3, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Goles de un Equipo", puntos_asignados=1, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acierto Diferencia de Goles", puntos_asignados=2, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar el Campeón", puntos_asignados=10, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar el Subcampeon", puntos_asignados=7, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar el Tercer Puesto", puntos_asignados=5, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Atinar los 3 del Podio", puntos_asignados=15, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Trivia Diaria (Módulo IA)", puntos_asignados=2, estado=estado_inicial),
+            ConfiguracionReglaPolla(polla_id=nueva_polla.id, tipo_regla="Acertar Goleador del Mundial", puntos_asignados=10, estado=estado_inicial),
         ]
         db.session.bulk_save_objects(reglas_base)
         db.session.commit()

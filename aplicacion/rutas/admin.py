@@ -37,7 +37,7 @@ def dashboard():
         flash("Configuraciones del bot de Trivia IA guardadas exitosamente.", "success")
         return redirect(url_for('admin.dashboard'))
 
-    candidatos = CandidatoGoleador.query.all()
+    candidatos = db.session.query(CandidatoGoleador, Torneo.nombre).join(Torneo, CandidatoGoleador.torneo_id == Torneo.id).all()
     torneos = Torneo.query.all()
 
     return render_template('admin/dashboard.html', proveedor=llm_proveedor.valor if llm_proveedor else '', api_key=llm_api_key.valor if llm_api_key else '', candidatos=candidatos, torneos=torneos)
